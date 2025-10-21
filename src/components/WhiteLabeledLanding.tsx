@@ -15,13 +15,73 @@ import {
 import Link from "next/link";
 import { useWorkspace } from "~/contexts/WorkspaceContext";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export function WhiteLabeledLanding() {
   const { workspace } = useWorkspace();
+  const [workspaceData, setWorkspaceData] = useState(workspace);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const brandName = workspace?.name || "Video Processor";
-  const brandColor = workspace?.primaryColor || "#3b82f6";
-  const brandLogo = workspace?.logoUrl;
+  useEffect(() => {
+    // Fetch workspace data directly for custom domains
+    const fetchWorkspaceData = async () => {
+      try {
+        console.log('[WhiteLabeledLanding] Fetching workspace data for custom domain...');
+        const response = await fetch('/api/workspace/current', {
+          headers: {
+            'Host': window.location.host,
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[WhiteLabeledLanding] Fetched workspace data:', data);
+          setWorkspaceData(data);
+        } else {
+          console.error('[WhiteLabeledLanding] Failed to fetch workspace data:', response.status);
+        }
+      } catch (error) {
+        console.error('[WhiteLabeledLanding] Error fetching workspace data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Listen for workspace updates
+    const handleWorkspaceUpdate = (event: CustomEvent) => {
+      console.log('[WhiteLabeledLanding] Workspace updated:', event.detail);
+      setWorkspaceData(event.detail);
+      setIsLoading(false);
+    };
+
+    window.addEventListener('workspace-updated', handleWorkspaceUpdate as EventListener);
+
+    // For custom domains, fetch data directly
+    if (window.location.host === 'acme-video.test:3000') {
+      fetchWorkspaceData();
+    } else {
+      setIsLoading(false);
+    }
+
+    return () => {
+      window.removeEventListener('workspace-updated', handleWorkspaceUpdate as EventListener);
+    };
+  }, []);
+
+  const brandName = workspaceData?.name || "Video Processor";
+  const brandColor = workspaceData?.color || workspaceData?.primaryColor || "#3b82f6";
+  const brandLogo = workspaceData?.logo || workspaceData?.logoUrl;
+  
+  console.log('[WhiteLabeledLanding] Workspace data:', workspaceData);
+  console.log('[WhiteLabeledLanding] Brand color:', brandColor);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted workspace-branded">

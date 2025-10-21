@@ -7,14 +7,25 @@ export async function GET(request: NextRequest) {
   try {
     // Try to get workspace ID from headers
     const workspaceId = request.headers.get("x-workspace-id");
+    const customDomain = request.headers.get("x-workspace-custom-domain");
     
     let workspace = null;
     
-    // First try to find by ID if provided
-    if (workspaceId && workspaceId !== 'default') {
+    // First try to find by custom domain if provided
+    if (customDomain) {
+      const cleanDomain = customDomain.split(':')[0];
+      workspace = await db.query.workspaces.findFirst({
+        where: eq(workspaces.customDomain, cleanDomain),
+      });
+      console.log(`Looking up workspace by custom domain: ${cleanDomain}`, workspace ? 'Found' : 'Not found');
+    }
+    
+    // If no workspace found by domain, try to find by ID if provided
+    if (!workspace && workspaceId && workspaceId !== 'default') {
       workspace = await db.query.workspaces.findFirst({
         where: eq(workspaces.id, workspaceId),
       });
+      console.log(`Looking up workspace by ID: ${workspaceId}`, workspace ? 'Found' : 'Not found');
     }
     
     // If no workspace found by ID, try to find the default workspace

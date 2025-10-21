@@ -11,9 +11,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Domain parameter is required" }, { status: 400 });
     }
 
+    // Remove port from domain if present
+    const cleanDomain = domain.split(':')[0];
+    
     // Look up workspace by custom domain
     const workspace = await db.query.workspaces.findFirst({
-      where: eq(workspaces.customDomain, domain),
+      where: eq(workspaces.customDomain, cleanDomain),
     });
 
     if (!workspace) {

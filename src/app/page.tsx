@@ -11,20 +11,12 @@ import {
   Star
 } from "lucide-react";
 import Link from "next/link";
-import { WhiteLabeledLanding } from "~/components/WhiteLabeledLanding";
-import { headers } from "next/headers";
+import { ClientPageWrapper } from "~/components/ClientPageWrapper";
 
-export default async function HomePage() {
-  // Check if this is a custom domain request
-  const headersList = await headers();
-  const isCustomDomain = headersList.get("x-workspace-custom-domain");
-  
-  // If it's a custom domain, show white-labeled landing
-  if (isCustomDomain) {
-    return <WhiteLabeledLanding />;
-  }
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+    <ClientPageWrapper>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted">
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
@@ -245,6 +237,7 @@ export default async function HomePage() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </ClientPageWrapper>
   );
 }

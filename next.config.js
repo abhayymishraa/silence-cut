@@ -6,7 +6,9 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
+  output: 'standalone',
   images: {
+    dangerouslyAllowSVG: true,
     remotePatterns: [
       // Allow common image hosting services
       {
@@ -20,6 +22,10 @@ const config = {
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ui-avatars.com',
       },
       {
         protocol: 'https',

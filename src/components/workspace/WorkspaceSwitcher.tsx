@@ -97,26 +97,26 @@ export function WorkspaceSwitcher() {
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="min-w-[200px] justify-between" disabled={isSwitching}>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             {isSwitching ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
             ) : workspace?.logoUrl ? (
-              <div className="h-4 w-4 rounded overflow-hidden flex items-center justify-center">
+              <div className="h-6 w-6 rounded overflow-hidden flex items-center justify-center">
                 <img
                   src={workspace.logoUrl}
                   alt={`${workspace.name} Logo`}
-                  className="h-4 w-4 object-contain"
+                  className="h-6 w-6 object-contain"
                 />
               </div>
             ) : (
               <div 
-                className="h-4 w-4 rounded flex items-center justify-center text-white text-xs font-bold"
+                className="h-6 w-6 rounded flex items-center justify-center text-white text-sm font-bold"
                 style={{ backgroundColor: workspace?.primaryColor || '#3b82f6' }}
               >
                 {workspace?.name?.charAt(0)?.toUpperCase() || 'W'}
               </div>
             )}
-            <span className="truncate">
+            <span className="truncate font-medium">
               {isSwitching ? 'Switching...' : (workspace?.name || "Select Workspace")}
             </span>
           </div>

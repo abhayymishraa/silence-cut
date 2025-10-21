@@ -3,6 +3,7 @@ import "~/styles/globals.css";
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import { Providers } from "~/components/Providers";
+import { WorkspaceMetaUpdater } from "~/components/WorkspaceMetaUpdater";
 
 export const metadata: Metadata = {
   title: "Video Processor - Remove Silence from Videos",
@@ -18,25 +19,18 @@ const geist = Geist({
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // Get workspace headers from the server component
-  const headers = {
-    id: process.env.NODE_ENV === 'development' ? 'default' : '',
-    slug: process.env.NODE_ENV === 'development' ? 'default' : '',
-    name: process.env.NODE_ENV === 'development' ? 'Default Workspace' : '',
-    color: process.env.NODE_ENV === 'development' ? '#3b82f6' : '',
-    logo: process.env.NODE_ENV === 'development' ? '' : '',
-  };
-
   return (
     <html lang="en" className={`${geist.variable}`}>
       <head>
-        <meta name="x-workspace-id" content={headers.id} />
-        <meta name="x-workspace-slug" content={headers.slug} />
-        <meta name="x-workspace-name" content={headers.name} />
-        <meta name="x-workspace-color" content={headers.color} />
-        <meta name="x-workspace-logo" content={headers.logo} />
+        <meta name="x-workspace-id" content="" />
+        <meta name="x-workspace-slug" content="" />
+        <meta name="x-workspace-name" content="" />
+        <meta name="x-workspace-color" content="" />
+        <meta name="x-workspace-logo" content="" />
+        <meta name="x-workspace-custom-domain" content="" />
       </head>
       <body>
+        <WorkspaceMetaUpdater />
         <Providers>{children}</Providers>
       </body>
     </html>

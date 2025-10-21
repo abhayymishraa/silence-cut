@@ -9,6 +9,7 @@ import { Badge } from "~/components/ui/badge";
 import { UploadZone } from "~/components/video/UploadZone";
 import { JobList } from "~/components/video/JobList";
 import { WorkspaceSwitcher } from "~/components/workspace/WorkspaceSwitcher";
+import { AppHeader } from "~/components/layout/AppHeader";
 import { api } from "~/trpc/react";
 import { useWorkspace } from "~/contexts/WorkspaceContext";
 import { toast } from "sonner";
@@ -87,54 +88,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
-      {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <WorkspaceSwitcher />
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Badge variant="secondary">{credits?.credits || workspace?.credits || 0} Credits</Badge>
-                <Button 
-                  variant="default" 
-                  size="sm"
-                  onClick={() => router.push("/credits/buy")}
-                  style={{
-                    backgroundColor: workspace?.primaryColor || '#3b82f6',
-                    color: 'white',
-                    border: 'none'
-                  }}
-                  className="hover:opacity-90 transition-opacity"
-                >
-                  Buy Credits
-                </Button>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  refetchCredits();
-                  refetchJobs();
-                }}
-              >
-                Refresh
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => router.push("/settings")}
-              >
-                Settings
-              </Button>
-              <Button variant="outline" onClick={() => signOut()}>
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">

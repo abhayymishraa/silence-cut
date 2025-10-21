@@ -1,150 +1,197 @@
-# Deployment Guide for Multi-Tenant Video Processor
+# Deployment Guide
 
-This guide explains how to deploy the Multi-Tenant Video Processor application to Railway.
+This guide will help you deploy the Video Processor application to Railway.
 
 ## Prerequisites
 
-- [Railway Account](https://railway.app/)
-- [Stripe Account](https://stripe.com/) (for payment processing)
-- [GitHub Account](https://github.com/) (for deployment from repository)
+1. A Railway account (sign up at https://railway.app)
+2. A PostgreSQL database (Railway provides this)
+3. A Redis instance (Railway provides this)
+4. Stripe account for payments
+5. Google OAuth credentials (optional)
 
-## Environment Variables
+## Step 1: Deploy to Railway
 
-The following environment variables are required for deployment:
+### Option A: Deploy via Railway CLI
+
+1. Install Railway CLI:
+```bash
+npm install -g @railway/cli
+```
+
+2. Login to Railway:
+```bash
+railway login
+```
+
+3. Initialize Railway project:
+```bash
+railway init
+```
+
+4. Deploy:
+```bash
+railway up
+```
+
+### Option B: Deploy via GitHub
+
+1. Push your code to GitHub
+2. Connect your GitHub repository to Railway
+3. Railway will automatically deploy from your main branch
+
+## Step 2: Set up Environment Variables
+
+In your Railway dashboard, add these environment variables:
 
 ### Required Variables
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `REDIS_URL` | Redis connection string |
-| `NEXTAUTH_URL` | Full URL of your application (e.g., https://your-app.railway.app) |
-| `NEXTAUTH_SECRET` | Random string for NextAuth.js session encryption |
-| `AUTH_SECRET` | Same as NEXTAUTH_SECRET |
-| `NODE_ENV` | Set to "production" for production deployment |
+```bash
+# Database
+DATABASE_URL=postgresql://username:password@host:port/database
+
+# Redis
+REDIS_URL=redis://username:password@host:port
+
+# NextAuth
+AUTH_SECRET=your-secret-key-here
+NEXTAUTH_URL=https://your-app.railway.app
+
+# Stripe
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Demo Login (for testing)
+ENABLE_DEMO_LOGIN=true
+DEMO_PASSWORD=your-demo-password
+
+# File Upload
+UPLOAD_DIR=/tmp/uploads
+```
 
 ### Optional Variables
 
-| Variable | Description |
-|----------|-------------|
-| `AUTH_GOOGLE_ID` | Google OAuth Client ID |
-| `AUTH_GOOGLE_SECRET` | Google OAuth Client Secret |
-| `STRIPE_SECRET_KEY` | Stripe Secret Key |
-| `STRIPE_WEBHOOK_SECRET` | Stripe Webhook Secret |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe Publishable Key |
+```bash
+# Email (if using email auth)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
 
-## Railway Deployment Steps
+# Worker (if running separately)
+WORKER_REDIS_URL=redis://username:password@host:port
+```
 
-### 1. Create New Project
+## Step 3: Set up Database
 
-1. Log in to [Railway](https://railway.app/)
-2. Click "New Project" and select "Deploy from GitHub repo"
-3. Select your repository
-4. Railway will automatically detect the Next.js application
+1. Railway will automatically create a PostgreSQL database
+2. The application will run migrations on startup
+3. You can also run migrations manually:
+```bash
+railway run npx drizzle-kit push:pg
+```
 
-### 2. Set Up Database Service
+## Step 4: Set up Redis
 
-1. Click "New Service" and select "Database"
-2. Choose "PostgreSQL"
-3. Railway will provision a PostgreSQL database and generate a `DATABASE_URL`
+1. Add a Redis service in Railway
+2. Railway will provide the `REDIS_URL` automatically
 
-### 3. Set Up Redis Service
+## Step 5: Configure Stripe
 
-1. Click "New Service" and select "Database"
-2. Choose "Redis"
-3. Railway will provision a Redis instance and generate a `REDIS_URL`
+1. Create a Stripe account
+2. Get your API keys from the Stripe dashboard
+3. Set up webhooks pointing to `https://your-app.railway.app/api/stripe/webhook`
+4. Add the webhook secret to your environment variables
 
-### 4. Set Up Web Service
+## Step 6: Configure Google OAuth (Optional)
 
-1. In your project, click on the service deployed from your GitHub repository
-2. Go to the "Variables" tab
-3. Add all required environment variables
-4. Configure the build settings:
-   - Build Command: `npm run build`
-   - Start Command: `npm start`
+1. Go to Google Cloud Console
+2. Create OAuth 2.0 credentials
+3. Add `https://your-app.railway.app/api/auth/callback/google` as redirect URI
+4. Add the client ID and secret to your environment variables
 
-### 5. Set Up Worker Service
+## Step 7: Test Deployment
 
-1. Click "New Service" and select "Empty Service"
-2. Connect it to the same GitHub repository
-3. Set the following settings:
-   - Build Command: `npm install`
-   - Start Command: `npm run worker`
-4. Add the same environment variables as the web service
+1. Visit your Railway app URL
+2. Test the signup/signin flow
+3. Test video upload and processing
+4. Test the white-label features
 
-### 6. Configure Shared Storage
+## Custom Domains
 
-Railway offers persistent volumes for file storage:
+To set up custom domains for white-labeling:
 
-1. Go to your project settings
-2. Add a volume and mount it to both web and worker services at `/app/uploads`
-
-### 7. Set Up Stripe Webhook
-
-1. In your Stripe Dashboard, go to "Developers" > "Webhooks"
-2. Add a new endpoint with your Railway URL: `https://your-app.railway.app/api/webhooks/stripe`
-3. Add the following events:
-   - `checkout.session.completed`
-   - `checkout.session.expired`
-4. Copy the signing secret and add it as `STRIPE_WEBHOOK_SECRET` in your Railway variables
-
-### 8. Set Up Domain and SSL
-
-1. Go to your project settings in Railway
-2. Click on "Settings" for your web service
-3. Under "Domains", add your custom domain or use the provided Railway domain
-4. Railway will automatically provision SSL certificates
-
-## Custom Domain Setup
-
-### For Your Main Application
-
-1. Add your domain in Railway settings
-2. Update DNS records at your domain registrar:
-   - Add a CNAME record pointing to your Railway domain
-   - Example: `app.yourdomain.com` → `your-app.railway.app`
-
-### For White-Label Domains
-
-1. Instruct your customers to add a CNAME record pointing to your main domain:
-   - Example: `video.customerdomain.com` → `app.yourdomain.com`
-2. In your application, add the custom domain to the workspace settings
-
-## Scaling Considerations
-
-- **Web Service**: Scale horizontally by increasing the number of instances
-- **Worker Service**: Scale horizontally for more concurrent video processing
-- **Database**: Upgrade the plan as your data grows
-- **Redis**: Monitor queue size and upgrade as needed
+1. Add your domain to Railway
+2. Update the `customDomain` field in your workspace settings
+3. Configure DNS to point to Railway
 
 ## Monitoring
 
-Railway provides basic monitoring for all services. For more advanced monitoring:
+Railway provides built-in monitoring:
+- Logs are available in the Railway dashboard
+- Metrics are shown for CPU, memory, and network usage
+- You can set up alerts for errors
 
-1. Set up logging with a service like Papertrail or LogDNA
-2. Use Railway's metrics dashboard to monitor resource usage
-3. Set up alerts for critical failures
+## Scaling
 
-## Backup Strategy
-
-1. **Database**: Set up regular backups of your PostgreSQL database
-2. **File Storage**: Consider backing up the uploads directory to an external storage service
+Railway automatically scales your application based on traffic. For high-traffic applications:
+- Consider using Railway's Pro plan
+- Set up multiple instances
+- Use Railway's load balancer
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Worker Not Processing Jobs**:
-   - Check Redis connection
-   - Verify worker logs for errors
-   - Ensure FFmpeg is installed correctly
+1. **Build Failures**: Check that all dependencies are in package.json
+2. **Database Connection**: Verify DATABASE_URL is correct
+3. **Redis Connection**: Verify REDIS_URL is correct
+4. **Environment Variables**: Ensure all required variables are set
 
-2. **Database Connection Issues**:
-   - Check DATABASE_URL format
-   - Verify IP allowlist settings
+### Logs
 
-3. **Authentication Problems**:
-   - Verify NEXTAUTH_URL matches your actual domain
-   - Check AUTH_SECRET is set correctly
+Check logs in Railway dashboard:
+```bash
+railway logs
+```
 
-For additional help, refer to the Railway documentation or contact support.
+### Database Issues
+
+Connect to database:
+```bash
+railway connect postgres
+```
+
+Run migrations:
+```bash
+railway run npx drizzle-kit push:pg
+```
+
+## Security Considerations
+
+1. Use strong, unique passwords for all services
+2. Enable HTTPS (Railway provides this automatically)
+3. Regularly update dependencies
+4. Monitor for security vulnerabilities
+5. Use environment variables for all secrets
+6. Enable Stripe webhook signature verification
+
+## Backup
+
+Railway provides automatic backups for PostgreSQL databases. For additional backup:
+1. Export database regularly
+2. Backup uploaded files
+3. Keep environment variables secure
+
+## Cost Optimization
+
+1. Monitor usage in Railway dashboard
+2. Use appropriate instance sizes
+3. Optimize database queries
+4. Use CDN for static assets
+5. Implement caching strategies

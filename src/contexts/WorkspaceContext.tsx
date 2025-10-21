@@ -36,13 +36,22 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const getWorkspaceInfo = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/workspace/info");
+      const response = await fetch("/api/workspace/current");
       
       if (response.ok) {
         const data = await response.json();
-        setWorkspace(data);
-        console.log("Workspace data loaded:", data);
-        return data;
+        // Map the field names from /api/workspace/current to match our workspace interface
+        const workspaceData = {
+          id: data.id,
+          slug: data.slug,
+          name: data.name,
+          primaryColor: data.color,
+          logoUrl: data.logo,
+          credits: data.credits || 1,
+        };
+        setWorkspace(workspaceData);
+        console.log("Workspace data loaded:", workspaceData);
+        return workspaceData;
       } else {
         console.error("Failed to fetch workspace info, status:", response.status);
         // Try to use default workspace if API fails

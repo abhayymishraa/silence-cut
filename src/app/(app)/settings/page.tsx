@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Logo } from "~/components/ui/logo";
 import { useWorkspace } from "~/contexts/WorkspaceContext";
+import { AppHeader } from "~/components/layout/AppHeader";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
@@ -69,36 +70,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.back()}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <div className="flex items-center space-x-2">
-                <Logo size="sm" />
-                <span className="text-lg font-semibold">Settings</span>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Zap className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">
-                  {credits?.credits || 0} credits
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppHeader title="Settings" showBackButton />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">

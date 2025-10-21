@@ -1,0 +1,1 @@
+ALTER TABLE "video_processor_user" ADD COLUMN "password" varchar(255);

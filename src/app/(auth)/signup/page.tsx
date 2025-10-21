@@ -8,6 +8,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import Link from "next/link";
+import { useWorkspace } from "~/contexts/WorkspaceContext";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
@@ -17,6 +18,7 @@ export default function SignUpPage() {
   const [error, setError] = useState("");
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { workspace } = useWorkspace();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -44,17 +46,26 @@ export default function SignUpPage() {
     }
 
     try {
-      // Create a new user account
-      const result = await signIn("demo", {
-        email,
-        password,
-        redirect: false,
+      // Create a new user account via API
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          name: email.split('@')[0], // Use email prefix as name
+        }),
       });
-      
-      if (result?.ok) {
-        router.push("/dashboard");
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Account created successfully, redirect to signin with success message
+        router.push("/signin?message=Account created successfully! Please sign in with your credentials.");
       } else {
-        setError("Failed to create account. Please try again.");
+        setError(data.error || "Failed to create account. Please try again.");
         setIsLoading(false);
       }
     } catch (error) {
@@ -86,13 +97,26 @@ export default function SignUpPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
-              VP
-            </div>
+            {workspace?.logoUrl ? (
+              <div className="h-12 w-12 rounded-lg overflow-hidden flex items-center justify-center">
+                <img 
+                  src={workspace.logoUrl} 
+                  alt={`${workspace.name} Logo`}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            ) : (
+              <div 
+                className="h-12 w-12 rounded-lg flex items-center justify-center text-white font-bold text-xl"
+                style={{ backgroundColor: workspace?.primaryColor || '#3b82f6' }}
+              >
+                {workspace?.name?.charAt(0) || 'VP'}
+              </div>
+            )}
           </div>
           <CardTitle className="text-2xl">Create Account</CardTitle>
           <CardDescription>
-            Sign up for Video Processor and start processing videos
+            Sign up for {workspace?.name || 'Video Processor'} and start processing videos
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -138,7 +162,12 @@ export default function SignUpPage() {
                 {error}
               </div>
             )}
-            <Button type="submit" disabled={isLoading} className="w-full">
+            <Button 
+              type="submit" 
+              disabled={isLoading} 
+              className="w-full"
+              style={{ backgroundColor: workspace?.primaryColor || '#3b82f6' }}
+            >
               {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>

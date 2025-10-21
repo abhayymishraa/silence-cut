@@ -2,6 +2,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { eq } from "drizzle-orm";
+import { compare } from "bcryptjs";
 
 import { db } from "~/server/db";
 import {
@@ -45,8 +46,8 @@ export const authConfig = {
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
     })] : []),
-    // Add a demo provider for development
-    ...(process.env.NODE_ENV === "development" ? [{
+    // Optional demo credentials provider for development ONLY (disabled by default)
+    ...((process.env.NODE_ENV === "development" && process.env.ENABLE_DEMO_LOGIN === "true") ? [{
       id: "demo",
       name: "Demo Login",
       type: "credentials" as const,
@@ -54,58 +55,39 @@ export const authConfig = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials: any) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
-        // Check if user exists in database
+        // Find the user in the database
         const existingUser = await db.query.users.findFirst({
           where: eq(users.email, credentials.email),
         });
 
-        if (existingUser) {
-          // User exists, return their data
-          return {
-            id: existingUser.id,
-            email: existingUser.email,
-            name: existingUser.name,
-            image: existingUser.image,
-          };
+        if (!existingUser) {
+          return null;
+        }
+
+        // If user has a password (created via signup), verify it
+        if (existingUser.password) {
+          const isValidPassword = await compare(credentials.password, existingUser.password);
+          if (!isValidPassword) {
+            return null;
+          }
         } else {
-          // Create new user in database
-          const newUser = await db.insert(users).values({
-            id: `user-${Date.now()}`,
-            email: credentials.email,
-            name: credentials.email.split('@')[0],
-            image: null,
-            createdAt: new Date(),
-          }).returning();
-
-          if (newUser[0]) {
-            // Create membership for default workspace
-            const defaultWorkspace = await db.query.workspaces.findFirst({
-              where: eq(workspaces.slug, "default"),
-            });
-
-            if (defaultWorkspace) {
-              await db.insert(memberships).values({
-                userId: newUser[0].id,
-                workspaceId: defaultWorkspace.id,
-                role: "owner",
-              });
-            }
-
-            return {
-              id: newUser[0].id,
-              email: newUser[0].email,
-              name: newUser[0].name,
-              image: newUser[0].image,
-            };
+          // For users without passwords (e.g., Google OAuth), require demo password
+          if (process.env.DEMO_PASSWORD && credentials.password !== process.env.DEMO_PASSWORD) {
+            return null;
           }
         }
 
-        return null;
+        return {
+          id: existingUser.id,
+          email: existingUser.email,
+          name: existingUser.name,
+          image: existingUser.image,
+        };
       }
     }] : []),
   ],
@@ -119,6 +101,10 @@ export const authConfig = {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
+  pages: {
+    signIn: "/signin",
+    signUp: "/signup",
+  },
   cookies: {
     sessionToken: {
       name: `next-auth.session-token`,
@@ -127,6 +113,7 @@ export const authConfig = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
+        maxAge: 30 * 24 * 60 * 60, // 30 days
       },
     },
   },
@@ -136,18 +123,24 @@ export const authConfig = {
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        token.name = user.name;
       }
       return token;
     },
     session: ({ session, token }) => {
       console.log("Session callback - session:", session, "token:", token);
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id as string,
-        },
-      };
+      if (token) {
+        return {
+          ...session,
+          user: {
+            id: token.id as string,
+            email: token.email as string,
+            name: token.name as string,
+            image: session.user?.image,
+          },
+        };
+      }
+      return session;
     },
     redirect: ({ url, baseUrl }) => {
       console.log("Redirect callback - url:", url, "baseUrl:", baseUrl);
